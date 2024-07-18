@@ -12,6 +12,8 @@ struct chat_window {
 
 struct chat_window* create_chat_window(int width, int height, int start_y, int start_x);
 
+int process_chat_window_input(struct chat_window* chat_window);
+
 void draw_border(struct chat_window* chat_window);
 
 void add_message(struct chat_window* chat_window, char* sender, char* message);

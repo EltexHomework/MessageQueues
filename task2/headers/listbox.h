@@ -21,7 +21,7 @@ struct listbox {
   int padding_top;
 };
 
-struct listbox* create_listbox(int width, int height, int start_y, int start_x);
+struct listbox* create_listbox(int height, int width, int start_y, int start_x);
 
 void update(struct listbox* listbox);
 

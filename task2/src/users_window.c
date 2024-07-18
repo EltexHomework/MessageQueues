@@ -1,4 +1,5 @@
 #include "../headers/users_window.h"
+#include <curses.h>
 
 struct users_window* create_users_window(int height, int width, int start_y, int start_x) {
   struct users_window* users_window = (struct users_window*) malloc(sizeof(struct users_window));
@@ -6,10 +7,29 @@ struct users_window* create_users_window(int height, int width, int start_y, int
   users_window->window = newwin(height, width, start_y, start_x);
   users_window->listbox = create_listbox(height - 2, width - 2, start_y + 1, start_x + 1);
   
+  keypad(users_window->window, TRUE);
   draw_users_border(users_window);
   return users_window;
 }
 
+int process_users_window_input(struct users_window* users_window) {
+  int c;
+  while ((c = wgetch(users_window->window)) != KEY_F(1)) {
+    switch (c) {
+      case KEY_DOWN:
+        move_users_down(users_window);
+        break;
+      case KEY_UP:
+        move_users_up(users_window);
+        break;
+      // Tab
+      case 9:
+        return 1;
+    }
+  }
+
+  return 0;
+}
 void draw_users_border(struct users_window* users_window) {
   box(users_window->window, 0, 0);
   wrefresh(users_window->window);

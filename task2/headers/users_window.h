@@ -12,6 +12,8 @@ struct users_window {
 
 struct users_window* create_users_window(int width, int height, int start_y, int start_x);
 
+int process_users_window_input(struct users_window* users_window);
+
 void draw_users_border(struct users_window* users_window);
 
 void add_user(struct users_window* users_window, char* user);
