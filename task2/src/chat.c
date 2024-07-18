@@ -4,6 +4,7 @@ struct chat* create_chat() {
   struct chat* chat = (struct chat*) malloc(sizeof(struct chat));
   chat->chat_window = create_chat_window(50, 160, 0, 0);
   chat->users_window = create_users_window(50, 30, 0, 160);
+  chat->input_field = create_field(4, 190, 50, 0);
   chat->current_window = 1;
 
   for (int i = 1; i < MAX_ITEMS + 128; i++) {
@@ -46,7 +47,11 @@ void run_chat(struct chat* chat) {
     } 
     // input_field
     else {
-      chat->current_window = 1;
+      if (process_field_input(chat->input_field) == 1) {
+        chat->current_window = 1;
+      } else {
+        break;
+      }
     }
   }
 
@@ -57,6 +62,7 @@ void run_chat(struct chat* chat) {
 void dispose_chat(struct chat* chat) {
   dispose_chat_window(chat->chat_window);
   dispose_users_window(chat->users_window);
+  dispose_field(chat->input_field);
   free(chat);
 }
 

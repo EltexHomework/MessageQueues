@@ -1,4 +1,5 @@
 #include "../headers/chat.h"
+#include "../headers/input_field.h"
 #include <curses.h>
 #include <stdio.h>
 
