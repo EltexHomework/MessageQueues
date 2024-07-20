@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Werror -O2
+CFLAGS := -g -Wall -Werror -O2
 
 SRC_DIR := src
 BIN_DIR := bin
@@ -8,7 +8,13 @@ BIN_DIR := bin
 SOURCES := $(wildcard $(SRC_DIR)/*.c)
 OBJECTS := $(patsubst $(SRC_DIR)/%.c, $(BIN_DIR)/%, $(SOURCES))
 
-all: $(BIN_DIR) $(OBJECTS)
+all: sysv 
+
+sysv: CFLAGS += -DSTANDARD=0 
+sysv: $(BIN_DIR) $(OBJECTS)
+
+posix: CFLAGS += -DSTANDARD=1 -lrt 
+posix: $(BIN_DIR) $(OBJECTS)
 
 # Create bin directory
 $(BIN_DIR):
