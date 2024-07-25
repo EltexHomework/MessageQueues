@@ -7,20 +7,6 @@ struct chat* create_chat() {
   chat->input_field = create_field(4, 190, 50, 0);
   chat->current_window = 1;
 
-  for (int i = 1; i < MAX_ITEMS + 128; i++) {
-    char* sender = (char*) malloc(128 * sizeof(char));
-    snprintf(sender, sizeof(sender), "%d", i);
-    add_message(chat->chat_window, sender, "asdasdasdasd");
-    free(sender);
-  }
-  
-  for (int i = 1; i < MAX_ITEMS + 128; i++) {
-    char* sender = (char*) malloc(128 * sizeof(char));
-    snprintf(sender, sizeof(sender), "%d", i);
-    add_user(chat->users_window, sender);
-    free(sender);
-  }
-
   update(chat->users_window->listbox);
   update(chat->chat_window->listbox);
 
