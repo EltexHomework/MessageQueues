@@ -6,47 +6,13 @@
 struct server* create_server() {
   struct server* server = (struct server*) malloc(sizeof(struct server));
   server->users = (struct user**) malloc(MAX_USERS * sizeof(struct user*));  
-  server->messages = (struct message**) malloc(sizeof(struct message*));
-
-  key_t login_queue_key;
-  key_t users_queue_key;
-  key_t messages_queue_key;
-  key_t new_messages_queue_key;
-  
-  if ((login_queue_key = ftok(SERVER_QUEUE, LOGIN_QUEUE_ID) == -1)) {
-    perror("lq ftok error"); 
-    exit(EXIT_FAILURE);
-  } 
-  if ((users_queue_key = ftok(SERVER_QUEUE, UPDATE_USERS_QUEUE_ID) == -1)) {
-    perror("uuq ftok error"); 
-    exit(EXIT_FAILURE);
-  }
-  if ((messages_queue_key = ftok(SERVER_QUEUE, UPDATE_MESSAGES_QUEUE_ID) == -1)) {
-    perror("umq ftok error"); 
-    exit(EXIT_FAILURE);
-  }
-  if ((new_messages_queue_key = ftok(SERVER_QUEUE, NEW_MESSAGES_QUEUE_ID) == -1)) {
-    perror("nmq ftok error"); 
-    exit(EXIT_FAILURE);
-  }
-
-  if ((server->login_queue = msgget(login_queue_key, IPC_CREAT | 0666)) == -1) {
-    perror("lq msgget error"); 
-    exit(EXIT_FAILURE);
-  }
-  if ((server->users_queue = msgget(users_queue_key, IPC_CREAT | 0666)) == -1) {
-    perror("lq msgget error"); 
-    exit(EXIT_FAILURE);
-  }
-  if ((server->messages_queue = msgget(messages_queue_key, IPC_CREAT | 0666)) == -1) {
-    perror("lq msgget error"); 
-    exit(EXIT_FAILURE);
-  }
-  if ((server->new_messages_queue = msgget(new_messages_queue_key, IPC_CREAT | 0666)) == -1) {
-    perror("lq msgget error"); 
-    exit(EXIT_FAILURE);
-  }
-  
+  server->messages = (struct message**) malloc(MAX_CHAT_MESSAGES * sizeof(struct message*));
+  server->users_size = 0;
+  server->messages_size = 0;
+  server->login_queue = open_queue(SERVER_QUEUE, LOGIN_QUEUE_ID); 
+  server->messages_queue = open_queue(SERVER_QUEUE, UPDATE_MESSAGES_QUEUE_ID);
+  server->users_queue = open_queue(SERVER_QUEUE, UPDATE_USERS_QUEUE_ID);
+  server->new_messages_queue = open_queue(SERVER_QUEUE, NEW_MESSAGES_QUEUE_ID);
   return server;
 }
 
@@ -60,6 +26,24 @@ void run_server(struct server* server) {
   handle_connection_requests(server);
 }
 
+int open_queue(char* filename, int id) {
+  key_t queue_key;
+  int queue;
+
+  if ((queue_key = ftok(filename, id) == -1)) {
+    perror("ftok error"); 
+    exit(EXIT_FAILURE);
+  }
+  
+  if ((queue = msgget(queue_key, IPC_CREAT | 0666)) == -1) {
+    perror("msgget error"); 
+    exit(EXIT_FAILURE);
+  }
+  
+  return queue;
+}
+
+// Handlers
 void* handle_connection_requests(void* args) {
   struct server* server = (struct server*) args;
   struct connection_msg message;
@@ -69,11 +53,13 @@ void* handle_connection_requests(void* args) {
       switch (message.request.type) {
         case CONNECT:
           connect_user(server, message.mtype, message.request.username);
-          send_user_msg(server, message.request.username, message.request.type, 0, server->users_size);
+          send_all_users(server, message.mtype);
+          send_all_messages(server, message.mtype);
+          send_user_ranged(server, message.request.username, message.request.type, 0, server->users_size - 1);
           break;
         case DISCONNECT:
           disconnect_user(server, message.mtype, message.request.username);
-          send_user_msg(server, message.request.username, message.request.type, 0, server->users_size);
+          send_user_ranged(server, message.request.username, message.request.type, 0, server->users_size - 1);
           break;
         default:
           break;
@@ -84,17 +70,6 @@ void* handle_connection_requests(void* args) {
   return NULL;
 }
 
-void send_user_msg(struct server* server, char username[USERNAME_LEN], enum connection_type type, int start, int end) {
-  struct user_msg message;
-  message.request.type = type;
-  strncmp(message.request.username, username, USERNAME_LEN);
-
-  for (int i = start; i < end; i++) {
-    message.mtype = server->users[i]->pid;
-    msgsnd(server->users_queue, &message, sizeof(message.request), 0); 
-  }
-}
-
 void* handle_new_message_requests(void* args) {
   struct server* server = (struct server*) args;
   struct message_msg message;
@@ -102,13 +77,76 @@ void* handle_new_message_requests(void* args) {
   while (1) {
     if (msgrcv(server->login_queue, &message, sizeof(message.request), 0, 0) != -1) {
       add_message(server, message);
-      send_message_msg();
+      send_message_ranged(server, message.request.username, message.request.message, 0, server->users_size);
     }
   }
 
   return NULL;
 }
 
+// Single receiver
+void send_user_msg(struct server* server, char username[USERNAME_LEN], enum connection_type type, long pid) {
+  struct user_msg message;
+  
+  message.request.type = type;
+  strncpy(message.request.username, username, USERNAME_LEN);
+  message.mtype = pid; 
+
+  if (msgsnd(server->users_queue, &message, sizeof(message.request), 0) == -1) {
+    perror("msgsnd error");
+    exit(EXIT_FAILURE);
+  } 
+}
+
+void send_message_msg(struct server* server, char username[USERNAME_LEN], char text[MESSAGE_LEN], long pid) {
+  struct message_msg message;
+
+  strncpy(message.request.username, username, USERNAME_LEN);
+  strncpy(message.request.message, text, MESSAGE_LEN);
+  message.mtype = pid; 
+
+  if (msgsnd(server->messages_queue, &message, sizeof(message.request), 0) == -1) {
+    perror("msgsnd error");
+    exit(EXIT_FAILURE);
+  } 
+}
+
+void send_all_messages(struct server* server, long pid) {
+  for (int i = 0; i < server->messages_size; i++) {
+    send_message_msg(server, server->messages[i]->username, server->messages[i]->text, pid); 
+  }
+}
+
+void send_all_users(struct server* server, long pid) {
+  for (int i = 0; i < server->users_size; i++) {
+    send_user_msg(server, server->users[i]->username, CONNECT, pid); 
+  }
+}
+
+// Multiple receivers
+void send_message_ranged(struct server* server, char username[USERNAME_LEN], char text[MESSAGE_LEN], int start, int end) {
+  if (end > server->users_size) {
+    return;
+  }
+
+  for (int i = start; i < end; i++) {
+    long pid = server->users[i]->pid;
+    send_message_msg(server, username, text, pid);  
+  }
+}
+
+void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum connection_type type, int start, int end) {
+  if (end > server->users_size) {
+    return;
+  }
+  
+  for (int i = start; i < end; i++) {
+    long pid = server->users[i]->pid;
+    send_user_msg(server, username, type, pid);
+  }
+}
+
+// Users operations
 void connect_user(struct server* server, long pid, char username[USERNAME_LEN]) {
   if (server->users_size == MAX_USERS) {
     return;
@@ -133,6 +171,7 @@ void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN
   server->users_size--;
 }
 
+// Messages operations
 void add_message(struct server* server, struct message_msg message) {
   if (validate_user(server->users, server->users_size, message.mtype, message.request.username) == -1) {
     return;
@@ -167,3 +206,15 @@ int validate_user(struct user** users, int users_size, long pid, char username[U
   return -1;
 }
 
+void free_server(struct server* server) {
+  for (int i = 0; i < MAX_USERS; i++) {
+    free(server->users[i]);
+  }
+  free(server->users);
+
+  for (int i = 0; i < MAX_CHAT_MESSAGES; i++) {
+    free(server->messages[i]);
+  }
+  free(server->messages);
+  
+}

@@ -1,6 +1,7 @@
 #ifndef CONNECTION_REQUEST_H
 #define CONNECTION_REQUEST_H
-#define USERNAME_LEN 128
+
+#include "../../server/headers/config.h"
 
 enum connection_type { CONNECT, DISCONNECT };
 

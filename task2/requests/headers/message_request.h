@@ -1,8 +1,7 @@
 #ifndef MESSAGE_REQUEST_H
 #define MESSAGE_REQUEST_H
 
-#define MESSAGE_LEN 128
-#define USERNAME_LEN 128
+#include "../../server/headers/config.h"
 
 struct message_request {
   char username[USERNAME_LEN];

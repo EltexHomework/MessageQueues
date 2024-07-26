@@ -1,14 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#define MAX_CHAT_MESSAGES 128
-#define MAX_USERS 32
-#define SERVER_QUEUE "/server"
-#define LOGIN_QUEUE_ID 1
-#define UPDATE_MESSAGES_QUEUE_ID 2 
-#define UPDATE_USERS_QUEUE_ID 3      
-#define NEW_MESSAGES_QUEUE_ID 4      
-
+#include "../headers/config.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -37,22 +30,38 @@ struct server* create_server();
 
 void run_server(struct server* server);
 
+int open_queue(char* filename, int id);
+
+// Handlers for threads
 void* handle_connection_requests(void* args);
 
 void* handle_new_message_requests(void* args);
 
+// Users operation
 void connect_user(struct server* server, long pid, char username[USERNAME_LEN]);
 
 void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN]);
 
+// Messages operation 
 void add_message(struct server* server, struct message_msg message);
 
 void delete_message(struct server* server, int index);
 
-void send_message_msg();
+// Ranged amount of receivers
+void send_message_ranged(struct server* server, char username[USERNAME_LEN], char text[MESSAGE_LEN], int start, int end); 
 
-void send_user_msg(struct server* server, char username[USERNAME_LEN], enum connection_type type, int start, int end);
+void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum connection_type type, int start, int end);
+
+// Single receiver
+void send_user_msg(struct server* server, char username[USERNAME_LEN], enum connection_type type, long pid);
+  
+void send_message_msg(struct server* server, char username[USERNAME_LEN], char text[MESSAGE_LEN], long pid);
+
+void send_all_messages(struct server* server, long pid);
+
+void send_all_users(struct server* server, long pid);
 
 int validate_user(struct user** users, int users_size, long pid, char username[USERNAME_LEN]);
 
+void free_server(struct server* server);
 #endif // !SERVER_H
