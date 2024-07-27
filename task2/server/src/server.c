@@ -1,10 +1,12 @@
 #include "../headers/server.h"
+#include <pthread.h>
 #include <string.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
 struct server* create_server() {
   struct server* server = (struct server*) malloc(sizeof(struct server));
+  
   server->users = (struct user**) malloc(MAX_USERS * sizeof(struct user*));  
   server->messages = (struct message**) malloc(MAX_CHAT_MESSAGES * sizeof(struct message*));
   server->users_size = 0;
@@ -13,6 +15,9 @@ struct server* create_server() {
   server->messages_queue = open_queue(SERVER_QUEUE, UPDATE_MESSAGES_QUEUE_ID);
   server->users_queue = open_queue(SERVER_QUEUE, UPDATE_USERS_QUEUE_ID);
   server->new_messages_queue = open_queue(SERVER_QUEUE, NEW_MESSAGES_QUEUE_ID);
+  pthread_mutex_init(&server->users_mutex, NULL);
+  pthread_mutex_init(&server->messages_mutex, NULL);
+
   return server;
 }
 
@@ -148,18 +153,22 @@ void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum c
 
 // Users operations
 void connect_user(struct server* server, long pid, char username[USERNAME_LEN]) {
+  pthread_mutex_lock(&server->users_mutex);
   if (server->users_size == MAX_USERS) {
     return;
   }
-
+     
   struct user* user = server->users[server->users_size];
   user->pid = pid;
   strncpy(user->username, username, strlen(username));
   server->users_size++;
+  pthread_mutex_unlock(&server->users_mutex);
 }
 
 void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN]) {
   int index;
+
+  pthread_mutex_lock(&server->users_mutex);
   if ((index = validate_user(server->users, server->users_size, pid, username)) == -1) {
     return; 
   }
@@ -169,28 +178,37 @@ void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN
   }
 
   server->users_size--;
+  pthread_mutex_unlock(&server->users_mutex); 
 }
 
 // Messages operations
 void add_message(struct server* server, struct message_msg message) {
+
+  pthread_mutex_lock(&server->users_mutex);
   if (validate_user(server->users, server->users_size, message.mtype, message.request.username) == -1) {
     return;
   }
+  pthread_mutex_unlock(&server->users_mutex);
 
+  pthread_mutex_lock(&server->messages_mutex);
   if (server->messages_size == MAX_CHAT_MESSAGES) {
     delete_message(server, 0);
   }
   struct message* msg = server->messages[server->messages_size];
   strncpy(msg->username, message.request.username, USERNAME_LEN);
   strncpy(msg->text, message.request.message, USERNAME_LEN); 
+  pthread_mutex_unlock(&server->messages_mutex);
 }
 
 void delete_message(struct server* server, int index) {
+  pthread_mutex_lock(&server->messages_mutex);
+
   for (int i = index; i < server->users_size - 1; i++) {
     server->users[index] = server->users[i + 1]; 
   }
 
   server->users_size--;
+  pthread_mutex_unlock(&server->messages_mutex);
 }
 
 int validate_user(struct user** users, int users_size, long pid, char username[USERNAME_LEN]) {
@@ -207,14 +225,19 @@ int validate_user(struct user** users, int users_size, long pid, char username[U
 }
 
 void free_server(struct server* server) {
+  // Free users 
   for (int i = 0; i < MAX_USERS; i++) {
     free(server->users[i]);
   }
   free(server->users);
-
+  
+  // Free messages
   for (int i = 0; i < MAX_CHAT_MESSAGES; i++) {
     free(server->messages[i]);
   }
   free(server->messages);
   
+  // Destroy threads
+  pthread_mutex_destroy(&server->users_mutex);
+  pthread_mutex_destroy(&server->messages_mutex);  
 }

@@ -9,8 +9,8 @@
 - [x] Send users to new user
 - [x] Config file
 - [ ] Test server
-- [ ] Handle interruption signal to close thread and free memory
-- [ ] Add mutex to users and messages
+- [x] Handle interruption signal to close thread and free memory
+- [x] Add mutex to users and messages
 ## Client
 - [ ] Log in and receive all messages and users
 - [x] Config file
