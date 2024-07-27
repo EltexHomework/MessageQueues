@@ -4,11 +4,11 @@
 struct input_field* create_field(int height, int width, int start_y, int start_x) {
   struct input_field* field = (struct input_field*) malloc(sizeof(struct input_field));
   field->window = newwin(height, width, start_y, start_x);
-  keypad(field->window, TRUE);
   field->height = height;
   field->width = width;
-  clear_str(field);
   field->offset = 0;
+  clear_str(field);
+  keypad(field->window, TRUE);
   update_field(field);
   return field;
 }
@@ -57,6 +57,7 @@ int process_field_input(struct input_field* field) {
         return 1;
       // Enter
       case 10:
+        return 2;
         break;
       case KEY_BACKSPACE:
         if (strlen(field->str) > 0) {
@@ -78,6 +79,13 @@ void add_char(struct input_field* field, char c) {
       field->str[len] = c;
       field->str[len + 1] = '\0';
   }
+}
+
+char* get_str(struct input_field* field) {
+  char* str;
+  strncpy(str, field->str, STR_SIZE);
+  clear_str(field);
+  return str;
 }
 
 void clear_str(struct input_field* field) {

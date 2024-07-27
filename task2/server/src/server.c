@@ -117,15 +117,19 @@ void send_message_msg(struct server* server, char username[USERNAME_LEN], char t
 }
 
 void send_all_messages(struct server* server, long pid) {
+  pthread_mutex_lock(&server->messages_mutex);
   for (int i = 0; i < server->messages_size; i++) {
     send_message_msg(server, server->messages[i]->username, server->messages[i]->text, pid); 
   }
+  pthread_mutex_unlock(&server->messages_mutex);
 }
 
 void send_all_users(struct server* server, long pid) {
+  pthread_mutex_lock(&server->users_mutex);
   for (int i = 0; i < server->users_size; i++) {
     send_user_msg(server, server->users[i]->username, CONNECT, pid); 
   }
+  pthread_mutex_unlock(&server->users_mutex);
 }
 
 // Multiple receivers
@@ -133,11 +137,13 @@ void send_message_ranged(struct server* server, char username[USERNAME_LEN], cha
   if (end > server->users_size) {
     return;
   }
-
+  
+  pthread_mutex_lock(&server->users_mutex);
   for (int i = start; i < end; i++) {
     long pid = server->users[i]->pid;
     send_message_msg(server, username, text, pid);  
   }
+  pthread_mutex_unlock(&server->users_mutex);
 }
 
 void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum connection_type type, int start, int end) {
@@ -145,10 +151,12 @@ void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum c
     return;
   }
   
+  pthread_mutex_lock(&server->users_mutex);
   for (int i = start; i < end; i++) {
     long pid = server->users[i]->pid;
     send_user_msg(server, username, type, pid);
   }
+  pthread_mutex_unlock(&server->users_mutex);
 }
 
 // Users operations

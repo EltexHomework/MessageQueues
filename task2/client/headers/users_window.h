@@ -16,7 +16,9 @@ int process_users_window_input(struct users_window* users_window);
 
 void draw_users_border(struct users_window* users_window);
 
-void add_user(struct users_window* users_window, char* user);
+void add_user(struct users_window* users_window, char* username);
+
+void delete_user(struct users_window* users_window, char* username);
 
 void move_users_up(struct users_window* users_window);
 

@@ -28,6 +28,8 @@ int process_field_input(struct input_field* field);
 
 void add_char(struct input_field* field, char c); 
 
+char* get_str(struct input_field* field);
+
 void clear_str(struct input_field* field);
 
 void dispose_field(struct input_field* field);

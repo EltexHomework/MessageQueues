@@ -12,5 +12,9 @@
 - [x] Handle interruption signal to close thread and free memory
 - [x] Add mutex to users and messages
 ## Client
-- [ ] Log in and receive all messages and users
+- [ ] Add log in
+- [x] Add handler for message
+- [x] Add handler for users
+- [x] Add send message function
+- [x] Add threads
 - [x] Config file

@@ -46,6 +46,15 @@ void add_user(struct users_window* users_window, char* user) {
   }*/
 }
 
+void delete_user(struct users_window* users_window, char* username) {
+  for (int i = 0; i < users_window->listbox->size; i++) {
+    if (strcmp(username, users_window->listbox->items[i]) == 0) {
+      delete_item(users_window->listbox, i);
+      break;
+    }
+  }
+}
+
 void move_users_up(struct users_window* users_window) {
   move_up(users_window->listbox);
   update(users_window->listbox);
