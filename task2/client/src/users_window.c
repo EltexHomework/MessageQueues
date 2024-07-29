@@ -31,6 +31,7 @@ int process_users_window_input(struct users_window* users_window) {
 }
 void draw_users_border(struct users_window* users_window) {
   box(users_window->window, 0, 0);
+  mvwprintw(users_window->window, 0, 1, "Users");
   wrefresh(users_window->window);
 }
 
@@ -39,7 +40,6 @@ void add_user(struct users_window* users_window, char* user) {
     increase_size(users_window->listbox, 1); 
     add_item(users_window->listbox, user);
   }
-  update(users_window->listbox);
   /*if (users_window->listbox->length < users_window->listbox->height / 2) {
     move_users_down(users_window);
   }*/

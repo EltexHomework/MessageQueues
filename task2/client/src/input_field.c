@@ -91,7 +91,7 @@ char* get_str(struct input_field* field) {
 void clear_str(struct input_field* field) {
   memset(field->str, 0, STR_SIZE);
   field->offset = 0;
-  wrefresh(field->window);
+  update_field(field);
 }
 
 void dispose_field(struct input_field* field) {

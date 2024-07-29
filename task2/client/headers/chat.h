@@ -31,11 +31,13 @@ struct chat {
 
 };
 
-struct chat* create_chat(char* username);
+struct chat* create_chat(char* username, int height, int width, int start_y, int start_x);
 
 void run_chat(struct chat* chat);
 
 void connect_to_server(struct chat* chat);
+
+void disconnect_from_server(struct chat* chat);
 
 void* handle_user_requests(void* args);
 

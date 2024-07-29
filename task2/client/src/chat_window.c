@@ -34,6 +34,7 @@ int process_chat_window_input(struct chat_window* chat_window) {
 
 void draw_border(struct chat_window* chat_window) {
   box(chat_window->window, 0, 0);
+  mvwprintw(chat_window->window, 0, 1, "Messages");
   wrefresh(chat_window->window);
 }
 
@@ -50,7 +51,6 @@ void add_message(struct chat_window* chat_window, char* sender, char* message) {
   /*if (chat_window->listbox->length < chat_window->listbox->height / 2) {
     move_chat_down(chat_window);
   }*/
-  update(chat_window->listbox);
   free(buffer);
 }
 

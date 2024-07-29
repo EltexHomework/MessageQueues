@@ -2,11 +2,20 @@
 #include <string.h>
 #include <sys/msg.h>
 
-struct chat* create_chat(char* username) {
+struct chat* create_chat(char* username, int height, int width, int start_y, int start_x) {
   struct chat* chat = (struct chat*) malloc(sizeof(struct chat));
-  chat->chat_window = create_chat_window(50, 160, 0, 0);
-  chat->users_window = create_users_window(50, 30, 0, 160);
-  chat->input_field = create_field(4, 190, 50, 0);
+  int chat_window_height = height - 4; 
+  int chat_window_width = width - 30; 
+
+  int users_window_height = height - 4; 
+  int users_window_width = 30; 
+
+  int input_field_height = 4; 
+  int input_field_width = width; 
+
+  chat->chat_window = create_chat_window(chat_window_height, chat_window_width, start_y, start_x);
+  chat->users_window = create_users_window(users_window_height, users_window_width, start_y, start_x + chat_window_width);
+  chat->input_field = create_field(input_field_height, input_field_width, start_y + chat_window_height, start_x);
   chat->current_window = 1;
   chat->pid = (long) getpid();
   chat->login_queue = open_queue(SERVER_QUEUE, LOGIN_QUEUE_ID);
@@ -67,14 +76,13 @@ void run_chat(struct chat* chat) {
       }
     }
   }
-  pthread_join(users_thread, NULL);
-  pthread_join(message_thread, NULL);
 
+  disconnect_from_server(chat);  
   dispose_chat(chat);
   endwin();
 }
 
-void connect_to_server(struct chat *chat) {
+void connect_to_server(struct chat* chat) {
   struct connection_msg message;
   
   message.mtype = chat->pid;
@@ -98,6 +106,19 @@ void connect_to_server(struct chat *chat) {
   }*/
 }
 
+void disconnect_from_server(struct chat* chat) {
+  struct connection_msg message;
+
+  message.mtype = chat->pid;
+  message.request.type = DISCONNECT;
+  strncpy(message.request.username, chat->username, USERNAME_LEN);
+
+  if (msgsnd(chat->login_queue, &message, sizeof(struct connection_request), 0) == -1) {
+    perror("msgsnd error");
+    exit(EXIT_FAILURE);
+  }
+}
+
 void* handle_user_requests(void* args) {
   struct chat* chat = (struct chat*) args;
   struct user_msg message;
@@ -106,10 +127,12 @@ void* handle_user_requests(void* args) {
     if (msgrcv(chat->users_queue, &message, sizeof(struct user_request), chat->pid, 0) != -1) {
       switch (message.request.type) {
         case CONNECT:
-          add_user(chat->users_window, message.request.username); 
+          add_user(chat->users_window, message.request.username);
+          update(chat->users_window->listbox);
           break;
         case DISCONNECT:
           delete_user(chat->users_window, message.request.username); 
+          update(chat->users_window->listbox);
           break;
         default:
           break;
@@ -126,7 +149,8 @@ void* handle_message_requests(void* args) {
 
   while (1) {
     if (msgrcv(chat->messages_queue, &message, sizeof(struct message_request), chat->pid, 0) != -1) {
-      add_message(chat->chat_window, message.request.username, message.request.message); 
+      add_message(chat->chat_window, message.request.username, message.request.message);
+      update(chat->chat_window->listbox);
     }  
   }
 
@@ -153,10 +177,11 @@ int open_queue(char* filename, int id) {
 
 void send_message(struct chat* chat) {
   struct message_msg message;
+  char* str = get_str(chat->input_field);
   message.mtype = chat->pid;
   strncpy(message.request.username, chat->username, USERNAME_LEN);
-  strncpy(message.request.message, chat->input_field->str, MESSAGE_LEN);
-  clear_str(chat->input_field);
+  strncpy(message.request.message, str, MESSAGE_LEN);
+
   if (msgsnd(chat->new_messages_queue, &message, sizeof(message.request), 0) == -1) {
     perror("msgsnd error");
     exit(EXIT_FAILURE);

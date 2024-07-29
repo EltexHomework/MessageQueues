@@ -31,15 +31,7 @@ void run_server(struct server* server) {
   handle_connection_requests(server);
   pthread_join(new_messages_thread, NULL);
 }
-// Ensure the path exists and is accessible
-int file_exists(const char *filename) {
-  FILE *file = fopen(filename, "r");
-  if (file) {
-    fclose(file);
-    return 1;
-  }
-  return 0;
-}
+
 int open_queue(char* filename, int id) {
   key_t queue_key;
   int queue;
@@ -64,7 +56,6 @@ void* handle_connection_requests(void* args) {
   struct connection_msg message;
   
   while (1) {
-
     fprintf(stderr, "Waiting for connection messages.\n");
     if (msgrcv(server->login_queue, &message, sizeof(struct connection_request), 0, 0) != -1) {
       switch (message.request.type) {
@@ -80,7 +71,7 @@ void* handle_connection_requests(void* args) {
         case DISCONNECT:
           fprintf(stderr, " -- User is trying to disconnect\n");
           disconnect_user(server, message.mtype, message.request.username);
-          send_user_ranged(server, message.request.username, message.request.type, 0, server->users_size - 1);
+          send_user_ranged(server, message.request.username, message.request.type, 0, server->users_size);
           break;
         default:
           break;
