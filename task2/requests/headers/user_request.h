@@ -1,6 +1,5 @@
 #ifndef USER_REQUEST_H
 #define USER_REQUEST_H
-#define USERNAME_LEN 128
 
 #include "connection_request.h"
 

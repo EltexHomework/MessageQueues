@@ -1,8 +1,6 @@
 #include "../headers/server.h"
-#include <pthread.h>
-#include <string.h>
+#include <stdio.h>
 #include <sys/ipc.h>
-#include <sys/msg.h>
 
 struct server* create_server() {
   struct server* server = (struct server*) malloc(sizeof(struct server));
@@ -11,6 +9,7 @@ struct server* create_server() {
   server->messages = (struct message**) malloc(MAX_CHAT_MESSAGES * sizeof(struct message*));
   server->users_size = 0;
   server->messages_size = 0;
+
   server->login_queue = open_queue(SERVER_QUEUE, LOGIN_QUEUE_ID); 
   server->messages_queue = open_queue(SERVER_QUEUE, UPDATE_MESSAGES_QUEUE_ID);
   server->users_queue = open_queue(SERVER_QUEUE, UPDATE_USERS_QUEUE_ID);
@@ -23,23 +22,34 @@ struct server* create_server() {
 
 void run_server(struct server* server) {
   pthread_t new_messages_thread;
-  
+  fprintf(stderr, "Server started.\n");   
   if (pthread_create(&new_messages_thread, NULL, handle_new_message_requests, (void*) server) != 0) {
     perror("pthread_create error");
     exit(EXIT_FAILURE);
   }
+  fprintf(stderr, " -- Thread for new messages created.\n");
   handle_connection_requests(server);
+  pthread_join(new_messages_thread, NULL);
 }
-
+// Ensure the path exists and is accessible
+int file_exists(const char *filename) {
+  FILE *file = fopen(filename, "r");
+  if (file) {
+    fclose(file);
+    return 1;
+  }
+  return 0;
+}
 int open_queue(char* filename, int id) {
   key_t queue_key;
   int queue;
-
-  if ((queue_key = ftok(filename, id) == -1)) {
+  
+  if ((queue_key = ftok(filename, id)) == -1) {
     perror("ftok error"); 
     exit(EXIT_FAILURE);
   }
   
+  fprintf(stderr, "queue_key: %d\n", queue_key);
   if ((queue = msgget(queue_key, IPC_CREAT | 0666)) == -1) {
     perror("msgget error"); 
     exit(EXIT_FAILURE);
@@ -52,17 +62,23 @@ int open_queue(char* filename, int id) {
 void* handle_connection_requests(void* args) {
   struct server* server = (struct server*) args;
   struct connection_msg message;
-
+  
   while (1) {
-    if (msgrcv(server->login_queue, &message, sizeof(message.request), 0, 0) != -1) {
+
+    fprintf(stderr, "Waiting for connection messages.\n");
+    if (msgrcv(server->login_queue, &message, sizeof(struct connection_request), 0, 0) != -1) {
       switch (message.request.type) {
         case CONNECT:
-          connect_user(server, message.mtype, message.request.username);
+          fprintf(stderr, " -- User is trying to connect\n");
+          if (connect_user(server, message.mtype, message.request.username) == -1) {
+            break;
+          }
           send_all_users(server, message.mtype);
           send_all_messages(server, message.mtype);
           send_user_ranged(server, message.request.username, message.request.type, 0, server->users_size - 1);
           break;
         case DISCONNECT:
+          fprintf(stderr, " -- User is trying to disconnect\n");
           disconnect_user(server, message.mtype, message.request.username);
           send_user_ranged(server, message.request.username, message.request.type, 0, server->users_size - 1);
           break;
@@ -78,9 +94,11 @@ void* handle_connection_requests(void* args) {
 void* handle_new_message_requests(void* args) {
   struct server* server = (struct server*) args;
   struct message_msg message;
-
+  
   while (1) {
-    if (msgrcv(server->login_queue, &message, sizeof(message.request), 0, 0) != -1) {
+    fprintf(stderr, "Waiting for new message requests\n");
+    if (msgrcv(server->new_messages_queue, &message, sizeof(struct message_msg), 0, 0) != -1) {
+      fprintf(stderr, "New message received: %s %s\n", message.request.username, message.request.message);
       add_message(server, message);
       send_message_ranged(server, message.request.username, message.request.message, 0, server->users_size);
     }
@@ -97,7 +115,7 @@ void send_user_msg(struct server* server, char username[USERNAME_LEN], enum conn
   strncpy(message.request.username, username, USERNAME_LEN);
   message.mtype = pid; 
 
-  if (msgsnd(server->users_queue, &message, sizeof(message.request), 0) == -1) {
+  if (msgsnd(server->users_queue, &message, sizeof(struct user_request), 0) == -1) {
     perror("msgsnd error");
     exit(EXIT_FAILURE);
   } 
@@ -110,7 +128,7 @@ void send_message_msg(struct server* server, char username[USERNAME_LEN], char t
   strncpy(message.request.message, text, MESSAGE_LEN);
   message.mtype = pid; 
 
-  if (msgsnd(server->messages_queue, &message, sizeof(message.request), 0) == -1) {
+  if (msgsnd(server->messages_queue, &message, sizeof(struct message_request), 0) == -1) {
     perror("msgsnd error");
     exit(EXIT_FAILURE);
   } 
@@ -160,17 +178,29 @@ void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum c
 }
 
 // Users operations
-void connect_user(struct server* server, long pid, char username[USERNAME_LEN]) {
+int connect_user(struct server* server, long pid, char username[USERNAME_LEN]) {
   pthread_mutex_lock(&server->users_mutex);
   if (server->users_size == MAX_USERS) {
-    return;
+    struct connection_msg message;
+    message.mtype = pid;
+    message.request.type = DISCONNECT;
+    strncpy(message.request.username, username, USERNAME_LEN);
+    
+    if (msgsnd(server->login_queue, &message, sizeof(message.request), 0) == -1) {
+      perror("msgsnd error");
+      exit(EXIT_FAILURE);
+    }
+    return -1;
   }
      
-  struct user* user = server->users[server->users_size];
+  struct user* user = (struct user*) malloc(sizeof(struct user));
   user->pid = pid;
   strncpy(user->username, username, strlen(username));
+  server->users[server->users_size] = user;
   server->users_size++;
   pthread_mutex_unlock(&server->users_mutex);
+  fprintf(stderr, "-- User connected\n");
+  return 0;
 }
 
 void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN]) {
@@ -191,7 +221,6 @@ void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN
 
 // Messages operations
 void add_message(struct server* server, struct message_msg message) {
-
   pthread_mutex_lock(&server->users_mutex);
   if (validate_user(server->users, server->users_size, message.mtype, message.request.username) == -1) {
     return;
@@ -202,9 +231,11 @@ void add_message(struct server* server, struct message_msg message) {
   if (server->messages_size == MAX_CHAT_MESSAGES) {
     delete_message(server, 0);
   }
-  struct message* msg = server->messages[server->messages_size];
+  struct message* msg = (struct message*) malloc(sizeof(struct message));
   strncpy(msg->username, message.request.username, USERNAME_LEN);
   strncpy(msg->text, message.request.message, USERNAME_LEN); 
+  server->messages[server->messages_size] = msg;
+  server->messages_size++;
   pthread_mutex_unlock(&server->messages_mutex);
 }
 
@@ -244,7 +275,10 @@ void free_server(struct server* server) {
     free(server->messages[i]);
   }
   free(server->messages);
-  
+  msgctl(server->login_queue, IPC_RMID, NULL);
+  msgctl(server->messages_queue, IPC_RMID, NULL);  
+  msgctl(server->users_queue, IPC_RMID, NULL);  
+  msgctl(server->new_messages_queue, IPC_RMID, NULL);  
   // Destroy threads
   pthread_mutex_destroy(&server->users_mutex);
   pthread_mutex_destroy(&server->messages_mutex);  

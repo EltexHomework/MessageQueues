@@ -1,5 +1,4 @@
 #include "../headers/users_window.h"
-#include <curses.h>
 
 struct users_window* create_users_window(int height, int width, int start_y, int start_x) {
   struct users_window* users_window = (struct users_window*) malloc(sizeof(struct users_window));
@@ -40,7 +39,7 @@ void add_user(struct users_window* users_window, char* user) {
     increase_size(users_window->listbox, 1); 
     add_item(users_window->listbox, user);
   }
-  
+  update(users_window->listbox);
   /*if (users_window->listbox->length < users_window->listbox->height / 2) {
     move_users_down(users_window);
   }*/

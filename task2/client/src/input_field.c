@@ -82,7 +82,7 @@ void add_char(struct input_field* field, char c) {
 }
 
 char* get_str(struct input_field* field) {
-  char* str;
+  char* str = (char*) malloc(STR_SIZE * sizeof(char));
   strncpy(str, field->str, STR_SIZE);
   clear_str(field);
   return str;
@@ -91,6 +91,7 @@ char* get_str(struct input_field* field) {
 void clear_str(struct input_field* field) {
   memset(field->str, 0, STR_SIZE);
   field->offset = 0;
+  wrefresh(field->window);
 }
 
 void dispose_field(struct input_field* field) {

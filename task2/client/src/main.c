@@ -1,6 +1,4 @@
 #include "../headers/chat.h"
-#include "../headers/input_field.h"
-#include <curses.h>
 
 int main(void) {
   initscr();
@@ -9,7 +7,7 @@ int main(void) {
   noecho();
   keypad(stdscr, TRUE);
     
-  struct chat* chat = create_chat();
+  struct chat* chat = create_chat("TheNorth");
   run_chat(chat);
   return 0;
 }

@@ -3,7 +3,7 @@
 
 #define MAX_USERS 32
 #define MAX_CHAT_MESSAGES 128
-#define SERVER_QUEUE "/server"
+#define SERVER_QUEUE "./server"
 #define LOGIN_QUEUE_ID 1
 #define UPDATE_MESSAGES_QUEUE_ID 2 
 #define UPDATE_USERS_QUEUE_ID 3      

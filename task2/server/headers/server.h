@@ -8,6 +8,9 @@
 #include <sys/msg.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <complex.h>
+#include <string.h>
+#include <stdio.h>
 #include "../../requests/headers/users_msg.h"
 #include "../../requests/headers/connection_msg.h"
 #include "../../requests/headers/message_msg.h"
@@ -41,7 +44,7 @@ void* handle_connection_requests(void* args);
 void* handle_new_message_requests(void* args);
 
 // Users operation
-void connect_user(struct server* server, long pid, char username[USERNAME_LEN]);
+int connect_user(struct server* server, long pid, char username[USERNAME_LEN]);
 
 void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN]);
 

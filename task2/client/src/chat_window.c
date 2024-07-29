@@ -1,5 +1,4 @@
 #include "../headers/chat_window.h"
-#include <curses.h>
 
 struct chat_window* create_chat_window(int height, int width, int start_y, int start_x) {
   struct chat_window* chat_window = (struct chat_window*) malloc(sizeof(struct chat_window));
@@ -51,7 +50,7 @@ void add_message(struct chat_window* chat_window, char* sender, char* message) {
   /*if (chat_window->listbox->length < chat_window->listbox->height / 2) {
     move_chat_down(chat_window);
   }*/
-  
+  update(chat_window->listbox);
   free(buffer);
 }
 

@@ -31,9 +31,11 @@ struct chat {
 
 };
 
-struct chat* create_chat(char username[USERNAME_LEN]);
+struct chat* create_chat(char* username);
 
 void run_chat(struct chat* chat);
+
+void connect_to_server(struct chat* chat);
 
 void* handle_user_requests(void* args);
 
