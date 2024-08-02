@@ -31,15 +31,13 @@ struct server* create_server() {
  * @server - pointer to an object of server struct 
  */
 void run_server(struct server* server) {
-  pthread_t new_messages_thread;
   fprintf(stderr, "Server started.\n");   
-  if (pthread_create(&new_messages_thread, NULL, handle_new_message_requests, (void*) server) != 0) {
+  if (pthread_create(&server->messages_thread, NULL, handle_new_message_requests, (void*) server) != 0) {
     perror("pthread_create error");
     exit(EXIT_FAILURE);
   }
   fprintf(stderr, " -- Thread for new messages created.\n");
   handle_connection_requests(server);
-  pthread_join(new_messages_thread, NULL);
 }
 
 int open_queue(char* filename, int id) {
@@ -367,7 +365,7 @@ int validate_user(struct user** users, int users_size, long pid, char username[U
  */ 
 void free_server(struct server* server) {
   /* free users */ 
-  for (int i = 0; i < MAX_USERS; i++) {
+  for (int i = 0; i < server->users_size; i++) {
     free(server->users[i]);
   }
   free(server->users);
@@ -377,12 +375,15 @@ void free_server(struct server* server) {
     free(server->messages[i]);
   }
   free(server->messages);
+  
   msgctl(server->login_queue, IPC_RMID, NULL);
   msgctl(server->messages_queue, IPC_RMID, NULL);  
   msgctl(server->users_queue, IPC_RMID, NULL);  
   msgctl(server->new_messages_queue, IPC_RMID, NULL);  
-
+  
+  pthread_cancel(server->messages_thread);
   /* destroy mutexes */
   pthread_mutex_destroy(&server->users_mutex);
   pthread_mutex_destroy(&server->messages_mutex);  
+  free(server); 
 }

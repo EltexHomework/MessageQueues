@@ -232,11 +232,13 @@ void send_message(struct chat* chat) {
   message.mtype = chat->pid;
   strncpy(message.request.username, chat->username, USERNAME_LEN);
   strncpy(message.request.message, str, MESSAGE_LEN);
+  free(str);
 
   if (msgsnd(chat->new_messages_queue, &message, sizeof(message.request), 0) == -1) {
     perror("msgsnd error");
     exit(EXIT_FAILURE);
   }
+  
 }
 
 /**

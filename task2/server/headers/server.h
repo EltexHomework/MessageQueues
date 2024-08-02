@@ -42,9 +42,11 @@
 struct server {
   struct user** users;
   struct message** messages;
+  
+  pthread_t messages_thread;
   pthread_mutex_t users_mutex;
   pthread_mutex_t messages_mutex;
-
+  
   int users_size;
   int messages_size;
 

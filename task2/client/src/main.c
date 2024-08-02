@@ -12,19 +12,18 @@ void get_username(char *username, size_t len) {
 }
 
 int main(void) {
+  int width, height;
+  char username[USERNAME_LEN];
+
   initscr();
   start_color();
   cbreak();
   echo();
   keypad(stdscr, TRUE);
-
-  char username[USERNAME_LEN];
+  getmaxyx(stdscr, height, width);
 
   get_username(username, USERNAME_LEN);
-
   noecho();
-  int width, height;
-  getmaxyx(stdscr, height, width);
 
   struct chat* chat = create_chat(username, height, width, 0, 0);
   run_chat(chat);
