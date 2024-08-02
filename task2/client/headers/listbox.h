@@ -7,6 +7,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Listbox struct implements blank listbox
+ * without any field related logic. Used
+ * to display lists of items as strings.
+ * Capable of scrolling up and down.
+ *
+ * [Key bindings]
+ * 
+ * - Tab - used to change focus on windows
+ * - Key down - used on all windows to scroll down
+ * - Key up - used on all windows to scroll up
+ * - F1 - used to exit program
+ * 
+ * [Example]
+ *  
+ */
 struct listbox {
   WINDOW *items_window;
 

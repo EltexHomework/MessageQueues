@@ -12,6 +12,31 @@
 #include <unistd.h>
 #include <pthread.h>
 
+/* Chat struct implements chat logic and connection
+ * to server.
+ * 
+ * [Key bindings]
+ * 
+ * - F1 - used to exit program
+ * 
+ * [Example]
+ * initscr();
+ * cbreak();
+ * noecho();
+ * keypad(stdscr, TRUE);
+ *
+ * char username[USERNAME_LEN];
+ *
+ * get_username(username, USERNAME_LEN);
+ *
+ * int width, height;
+ * getmaxyx(stdscr, height, width);
+ *
+ * struct chat* chat = create_chat(username, height, width, 0, 0);
+ * run_chat(chat);
+ *
+ * endwin();
+ */
 struct chat {
   struct chat_window* chat_window;
   struct users_window* users_window;
@@ -23,10 +48,14 @@ struct chat {
   int users_queue;
   int new_messages_queue;
   
-  // required for direct receive of messages
+  /* pid of process that runs chat */
   long pid;
-
-  // 1 - chat, 2 - users, 3 - input_field
+  
+  /* specifies which window has focus on:
+   * 1 - chat_window,
+   * 2 - users_window,
+   * 3 - input_field
+   */
   int current_window;  
 
 };

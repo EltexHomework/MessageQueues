@@ -7,6 +7,20 @@
 #include <string.h>
 #include <ctype.h>
 
+/* Input field struct implements functionality
+ * of text field.
+ * 
+ * [Key bindings]
+ * 
+ * - Enter - used to send message
+ * - Tab - used to change focus on windows
+ * - Key down - used on all windows to scroll down
+ * - Key up - used on all windows to scroll up
+ * - F1 - used to exit program
+ * 
+ * [Example]
+ *  
+ */
 struct input_field {
   WINDOW* window;
   char str[STR_SIZE];

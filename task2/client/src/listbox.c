@@ -1,6 +1,15 @@
 #include "../headers/listbox.h"
-#include <curses.h>
 
+/**
+ * create_listbox - used to create an object of struct listbox.
+ * Initializes items contents as NULL items.
+ * @height - height of listbox
+ * @width - width of listbox
+ * @start_y - y position where listbox is drawn from
+ * @start_x - x position where listbox is drawn from
+ *
+ * Return: pointer to listbox struct
+ */
 struct listbox* create_listbox(int height, int width, int start_y, int start_x) {
   struct listbox* listbox = (struct listbox*) malloc(sizeof(struct listbox));
   
@@ -19,6 +28,10 @@ struct listbox* create_listbox(int height, int width, int start_y, int start_x) 
   return listbox;
 }
 
+/**
+ * update - is used to redraw listbox contents.
+ * @listbox - pointer to listbox struct object
+ */
 void update(struct listbox* listbox) {
   int x, y;
   int max_elements = listbox->height * 2;
@@ -38,6 +51,16 @@ void update(struct listbox* listbox) {
   wrefresh(listbox->items_window);
 }
 
+/**
+ * delete_item - used to delete an item in listbox
+ * on index position. Frees memory that allocated for
+ * item. Moves item pointers from index + 1 to left,
+ * decrements size.
+ * @listbox - pointer to listbox struct object
+ * @index - index of item to delete
+ *
+ * Return: 0 if successful, 1 if trying to delete NULL item  
+ */
 int delete_item(struct listbox* listbox, int index) {
   if (listbox->items[index] == NULL) {
     return 1; 
@@ -58,6 +81,10 @@ int delete_item(struct listbox* listbox, int index) {
   return 0;
 }
 
+/**
+ * move_up - used to scroll listbox up by one item.
+ * @listbox - pointer to listbox struct object 
+ */ 
 void move_up(struct listbox* listbox) {
   if (!listbox->can_scroll) {
     return;
@@ -70,6 +97,10 @@ void move_up(struct listbox* listbox) {
   listbox->padding_top--;
 }
 
+/**
+ * move_down - used to scroll listbox down by one item.
+ * @listbox - pointer to listbox struct object 
+ */ 
 void move_down(struct listbox* listbox) {
   if (!listbox->can_scroll) {
     return;
@@ -82,6 +113,13 @@ void move_down(struct listbox* listbox) {
   listbox->padding_top++;
 }
 
+/**
+ * add_item - used to append item in end of listbox.
+ * @listbox - pointer to listbox struct object
+ * @item - string to add
+ *
+ * Return: 0 on successful, 1 on arr overflow
+ */
 int add_item(struct listbox* listbox, char* item) {
   if (listbox->length == listbox->size) {
     return 1; 
@@ -98,6 +136,14 @@ int add_item(struct listbox* listbox, char* item) {
   return 0;
 }
 
+/**
+ * increase_size - increases collection size for amount
+ * of items.
+ * @listbox - pointer to listbox struct object
+ * @amount - amount of items to increase size on
+ *
+ * Return: 0 on successful
+ */
 int increase_size(struct listbox* listbox, int amount) {
   listbox->size += amount;
 
@@ -109,6 +155,11 @@ int increase_size(struct listbox* listbox, int amount) {
   return 0;
 }
 
+/**
+ * dispose - used to free memory allocated for listbox,
+ * frees items in collection, collection, window, and itself.
+ * @listbox - pointere to listbox struct object
+ */
 void dispose(struct listbox* listbox) {
   for (int i = 0; i < listbox->size; i++) {
     free(listbox->items[i]);

@@ -17,6 +17,28 @@
 #include "user.h"
 #include "message.h"
 
+/*
+ * Server struct implements functionality for
+ * messanger server with one room, capable of
+ * connecting and disconnecting users. Message
+ * queue are used to transfer messages between
+ * server and client.
+ *
+ * [Example]
+ * struct server* server;
+ *
+ * void free_memory();
+ *
+ * int main(void) {
+ *  server = create_server();
+ *  run_server(server); 
+ *  return 0;  
+ * }
+ * 
+ * void free_memory() {
+ *  free_server(server); 
+ * }
+ */
 struct server {
   struct user** users;
   struct message** messages;
@@ -26,9 +48,13 @@ struct server {
   int users_size;
   int messages_size;
 
+  /* mq for connection messages */ 
   int login_queue;
+  /* mq for new message users notification */ 
   int messages_queue;
+  /* mq for user connection or disconnection notification */
   int users_queue;
+  /* mq for newly send messages */
   int new_messages_queue;
 };
 
@@ -38,27 +64,22 @@ void run_server(struct server* server);
 
 int open_queue(char* filename, int id);
 
-// Handlers for threads
 void* handle_connection_requests(void* args);
 
 void* handle_new_message_requests(void* args);
 
-// Users operation
 int connect_user(struct server* server, long pid, char username[USERNAME_LEN]);
 
 void disconnect_user(struct server* server, long pid, char username[USERNAME_LEN]);
 
-// Messages operation 
 void add_message(struct server* server, struct message_msg message);
 
 void delete_message(struct server* server, int index);
 
-// Ranged amount of receivers
 void send_message_ranged(struct server* server, char username[USERNAME_LEN], char text[MESSAGE_LEN], int start, int end); 
 
 void send_user_ranged(struct server* server, char username[USERNAME_LEN], enum connection_type type, int start, int end);
 
-// Single receiver
 void send_user_msg(struct server* server, char username[USERNAME_LEN], enum connection_type type, long pid);
   
 void send_message_msg(struct server* server, char username[USERNAME_LEN], char text[MESSAGE_LEN], long pid);

@@ -5,6 +5,18 @@
 #include <stdio.h>
 #include "listbox.h"
 
+/* Chat windows struct adds chat window logic to
+ * blank listbox.
+ * [Key bindings]
+ * 
+ * - Tab - used to change focus on windows
+ * - Key down - used on all windows to scroll down
+ * - Key up - used on all windows to scroll up
+ * - F1 - used to exit program
+ * 
+ * [Example]
+ *  
+ */
 struct chat_window {
   WINDOW* window;
   struct listbox* listbox;

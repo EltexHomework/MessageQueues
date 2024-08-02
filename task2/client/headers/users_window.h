@@ -5,6 +5,19 @@
 #include <stdio.h>
 #include "listbox.h"
 
+/* Users windows add field related logic to blank
+ * listbox.
+ *
+ * [Key bindings]
+ * 
+ * - Tab - used to change focus on windows
+ * - Key down - used on all windows to scroll down
+ * - Key up - used on all windows to scroll up
+ * - F1 - used to exit program
+ * 
+ * [Example]
+ *  
+ */
 struct users_window {
   WINDOW* window;
   struct listbox* listbox;
